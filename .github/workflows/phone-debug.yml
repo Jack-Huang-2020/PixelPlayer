@@ -32,5 +32,5 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: PixelPlay-CI
-          path: app/build/outputs/apk/*.apk
+          path: app/build/outputs/apk/release/*.apk
           
