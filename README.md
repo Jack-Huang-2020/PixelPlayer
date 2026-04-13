@@ -29,8 +29,9 @@
 
 ---
 
-## ‼️ DISCLAIMER
-- No fork of this project will recieve support, if you use a fork, ask the forker to support you.
+## 🪨 A Stone Badge
+
+![Stone Badge](https://stone.professorlee.work/api/stone/Jack-Huang-2020/PixelPlayer)
 
 ---
 
