@@ -1,4 +1,4 @@
-name: Build Phone APK (Debug)
+name: Build Phone APK
 
 on:
   push:
