@@ -17,14 +17,14 @@
 </p>
 
 <p align="center">
-    <a href="https://github.com/theovilardo/PixelPlayer/releases/latest">
-        <img src="https://img.shields.io/github/v/release/theovilardo/PixelPlayer?include_prereleases&logo=github&style=for-the-badge&label=Latest%20Release" alt="Latest Release">
+    <a href="https://github.com/Jack-Huang-2020/PixelPlayer/releases/latest">
+        <img src="https://img.shields.io/github/v/release/Jack-Huang-2020/PixelPlayer?include_prereleases&style=for-the-badge&logo=github&style=for-the-badge&label=Latest%20Release" alt="Latest Release">
     </a>
-    <a href="https://github.com/theovilardo/PixelPlayer/releases">
-        <img src="https://img.shields.io/github/downloads/theovilardo/PixelPlayer/total?logo=github&style=for-the-badge" alt="Total Downloads">
+    <a href="https://github.com/Jack-Huang-2020/PixelPlayer/releases">
+        <img src="https://img.shields.io/github/downloads/Jack-Huang-2020/PixelPlayer/total?&style=for-the-badge&logo=github&style=for-the-badge" alt="Total Downloads">
     </a>
-    <img src="https://img.shields.io/badge/Android-10%2B-green?style=for-the-badge&logo=android" alt="Android 11+">
-    <img src="https://img.shields.io/badge/Kotlin-100%25-purple?style=for-the-badge&logo=kotlin" alt="Kotlin">
+    <img src="https://img.shields.io/badge/Android-17-green?style=for-the-badge&logo=android&style=for-the-badge" alt="Android 17">
+    <img src="https://img.shields.io/badge/Kotlin-114514%25-purple?style=for-the-badge&logo=kotlin&style=for-the-badge" alt="Kotlin">
 </p>
 
 ---
