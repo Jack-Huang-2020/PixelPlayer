@@ -7,11 +7,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
@@ -311,7 +306,6 @@ fun ArtistDetailScreen(
 
                             val sectionKey = section.collapseKey()
                             val isExpanded = expandedSections[sectionKey] ?: true
-                            
                             val sectionSongs = if (isTransitionFinished) section.songs else section.songs.take(5)
 
                             item(
@@ -332,35 +326,35 @@ fun ArtistDetailScreen(
                                 )
                             }
 
-                            item(
-                                key = "${sectionKey}_song_group_spacer",
-                                contentType = "artist_section_spacer"
-                            ) {
-                                AnimatedVisibility(
-                                    visible = isExpanded,
-                                    enter = expandVertically(animationSpec = tween(durationMillis = 260)) + fadeIn(animationSpec = tween(durationMillis = 180)),
-                                    exit = shrinkVertically(animationSpec = tween(durationMillis = 220)) + fadeOut(animationSpec = tween(durationMillis = 140))
+                            if (isExpanded) {
+                                item(
+                                    key = "${sectionKey}_song_group_spacer",
+                                    contentType = "artist_section_spacer"
                                 ) {
                                     Box(
                                         modifier = Modifier
+                                            .animateItem(
+                                                fadeInSpec = tween(durationMillis = 160),
+                                                fadeOutSpec = tween(durationMillis = 120),
+                                                placementSpec = tween(durationMillis = 180)
+                                            )
                                             .fillMaxWidth()
                                             .height(10.dp)
                                             .background(MaterialTheme.colorScheme.surfaceContainerLow.copy(alpha = 0.5f))
                                     )
                                 }
-                            }
 
-                            itemsIndexed(
-                                items = sectionSongs,
-                                key = { songIndex, song -> "${sectionKey}_song_${song.id}_$songIndex" },
-                                contentType = { _, _ -> "artist_section_song" }
-                            ) { songIndex, song ->
-                                AnimatedVisibility(
-                                    visible = isExpanded,
-                                    enter = expandVertically(animationSpec = tween(durationMillis = 280)) + fadeIn(animationSpec = tween(durationMillis = 200)),
-                                    exit = shrinkVertically(animationSpec = tween(durationMillis = 240)) + fadeOut(animationSpec = tween(durationMillis = 150))
-                                ) {
+                                itemsIndexed(
+                                    items = sectionSongs,
+                                    key = { songIndex, song -> "${sectionKey}_song_${song.id}_$songIndex" },
+                                    contentType = { _, _ -> "artist_section_song" }
+                                ) { songIndex, song ->
                                     ArtistAlbumSectionSongItem(
+                                        modifier = Modifier.animateItem(
+                                            fadeInSpec = tween(durationMillis = 180),
+                                            fadeOutSpec = tween(durationMillis = 120),
+                                            placementSpec = tween(durationMillis = 200)
+                                        ),
                                         song = song,
                                         songIndex = songIndex,
                                         songCount = section.songs.size,
@@ -640,6 +634,7 @@ private fun CollapsibleAlbumSectionHeader(
 
 @Composable
 private fun ArtistAlbumSectionSongItem(
+    modifier: Modifier = Modifier,
     song: Song,
     songIndex: Int,
     songCount: Int,
@@ -679,7 +674,7 @@ private fun ArtistAlbumSectionSongItem(
     }
 
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surfaceContainerLow.copy(alpha = 0.5f), containerShape)
             .padding(horizontal = 8.dp)

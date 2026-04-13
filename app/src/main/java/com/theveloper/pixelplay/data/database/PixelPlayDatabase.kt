@@ -36,7 +36,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         AiCacheEntity::class,
         AiUsageEntity::class
     ],
-    version = 38,
+    version = 40,
     exportSchema = true
 )
 abstract class PixelPlayDatabase : RoomDatabase() {
@@ -606,6 +606,25 @@ abstract class PixelPlayDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_38_39 = object : Migration(38, 39) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_songs_file_path ON songs(file_path)")
+            }
+        }
+
+        val MIGRATION_39_40 = object : Migration(39, 40) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_songs_parent_directory_path_source_type_album_id " +
+                        "ON songs(parent_directory_path, source_type, album_id)"
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_songs_parent_directory_path_source_type_id " +
+                        "ON songs(parent_directory_path, source_type, id)"
+                )
+            }
+        }
+
         private fun ensureSongsTableHasDateAdded(db: SupportSQLiteDatabase) {
             if (!tableExists(db, "songs")) {
                 recreateSongsTable(db)
@@ -774,15 +793,45 @@ abstract class PixelPlayDatabase : RoomDatabase() {
         }
 
         private fun createSongsEntityIndexes(db: SupportSQLiteDatabase) {
-            db.execSQL("CREATE INDEX IF NOT EXISTS index_songs_title ON songs(title)")
-            db.execSQL("CREATE INDEX IF NOT EXISTS index_songs_album_id ON songs(album_id)")
-            db.execSQL("CREATE INDEX IF NOT EXISTS index_songs_artist_id ON songs(artist_id)")
-            db.execSQL("CREATE INDEX IF NOT EXISTS index_songs_artist_name ON songs(artist_name)")
-            db.execSQL("CREATE INDEX IF NOT EXISTS index_songs_genre ON songs(genre)")
-            db.execSQL("CREATE INDEX IF NOT EXISTS index_songs_parent_directory_path ON songs(parent_directory_path)")
-            db.execSQL("CREATE INDEX IF NOT EXISTS index_songs_content_uri_string ON songs(content_uri_string)")
-            db.execSQL("CREATE INDEX IF NOT EXISTS index_songs_date_added ON songs(date_added)")
-            db.execSQL("CREATE INDEX IF NOT EXISTS index_songs_duration ON songs(duration)")
+            val columns = getTableColumns(db, "songs")
+
+            fun createIndexIfColumnExists(columnName: String, indexName: String) {
+                if (columnName in columns) {
+                    db.execSQL("CREATE INDEX IF NOT EXISTS $indexName ON songs($columnName)")
+                }
+            }
+
+            fun createCompositeIndexIfColumnsExist(indexName: String, vararg columnNames: String) {
+                if (columnNames.all(columns::contains)) {
+                    db.execSQL(
+                        "CREATE INDEX IF NOT EXISTS $indexName ON songs(${columnNames.joinToString(", ")})"
+                    )
+                }
+            }
+
+            createIndexIfColumnExists("title", "index_songs_title")
+            createIndexIfColumnExists("album_id", "index_songs_album_id")
+            createIndexIfColumnExists("artist_id", "index_songs_artist_id")
+            createIndexIfColumnExists("artist_name", "index_songs_artist_name")
+            createIndexIfColumnExists("genre", "index_songs_genre")
+            createIndexIfColumnExists("parent_directory_path", "index_songs_parent_directory_path")
+            createIndexIfColumnExists("file_path", "index_songs_file_path")
+            createIndexIfColumnExists("content_uri_string", "index_songs_content_uri_string")
+            createIndexIfColumnExists("date_added", "index_songs_date_added")
+            createIndexIfColumnExists("duration", "index_songs_duration")
+            createIndexIfColumnExists("source_type", "index_songs_source_type")
+            createCompositeIndexIfColumnsExist(
+                "index_songs_parent_directory_path_source_type_album_id",
+                "parent_directory_path",
+                "source_type",
+                "album_id"
+            )
+            createCompositeIndexIfColumnsExist(
+                "index_songs_parent_directory_path_source_type_id",
+                "parent_directory_path",
+                "source_type",
+                "id"
+            )
         }
 
         private fun recreatePlaylistsTable(db: SupportSQLiteDatabase) {

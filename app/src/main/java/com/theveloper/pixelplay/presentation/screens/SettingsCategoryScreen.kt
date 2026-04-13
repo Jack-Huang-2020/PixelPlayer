@@ -199,7 +199,7 @@ fun SettingsCategoryScreen(
     val isSyncing by settingsViewModel.isSyncing.collectAsStateWithLifecycle()
     val syncProgress by settingsViewModel.syncProgress.collectAsStateWithLifecycle()
     val dataTransferProgress by settingsViewModel.dataTransferProgress.collectAsStateWithLifecycle()
-    val allSongs by playerViewModel.allSongsFlow.collectAsStateWithLifecycle()
+    val paletteRegenerateTargets by playerViewModel.paletteRegenerationTargets.collectAsStateWithLifecycle()
     val explorerRoot = settingsViewModel.explorerRoot()
 
     // Local State
@@ -263,13 +263,6 @@ fun SettingsCategoryScreen(
     var paletteBulkTotalCount by remember { mutableStateOf(0) }
     var paletteSongSearchQuery by remember { mutableStateOf("") }
     val paletteRegenerateSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-
-    val songsWithAlbumArt = remember(allSongs) {
-        allSongs.filter { !it.albumArtUriString.isNullOrBlank() }
-    }
-    val paletteRegenerateTargets = remember(songsWithAlbumArt) {
-        songsWithAlbumArt.distinctBy { it.albumArtUriString }
-    }
     val isAnyPaletteRegenerateRunning = isPaletteRegenerateRunning || isPaletteBulkRegenerateRunning
     val filteredPaletteSongs = remember(paletteRegenerateTargets, paletteSongSearchQuery) {
         val query = paletteSongSearchQuery.trim()

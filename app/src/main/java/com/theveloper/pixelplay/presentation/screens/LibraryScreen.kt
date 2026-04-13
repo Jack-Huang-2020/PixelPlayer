@@ -1036,6 +1036,8 @@ fun LibraryScreen(
                             }
                         }
                         val allSongsLazyPagingItems = libraryViewModel.songsPagingFlow.collectAsLazyPagingItems()
+                        val albumsLazyPagingItems = libraryViewModel.albumsPagingFlow.collectAsLazyPagingItems()
+                        val artistsLazyPagingItems = libraryViewModel.artistsPagingFlow.collectAsLazyPagingItems()
                         val favoritePagingItems = libraryViewModel.favoritesPagingFlow.collectAsLazyPagingItems()
                         val isLibraryLoading by libraryViewModel.isLoadingLibrary.collectAsStateWithLifecycle()
                         val hasCurrentSong by remember(playerViewModel) {
@@ -1441,7 +1443,6 @@ fun LibraryScreen(
                                         )
                                     }
                                     LibraryTabId.ALBUMS -> {
-                                        val albums by playerViewModel.albumsFlow.collectAsStateWithLifecycle()
                                         val isLoading = playerUiState.isLoadingLibraryCategories
 
                                         val stableOnAlbumClick: (Long) -> Unit = remember(navController) {
@@ -1450,10 +1451,12 @@ fun LibraryScreen(
                                             }
                                         }
                                         LibraryAlbumsTab(
-                                            albums = albums,
+                                            albums = albumsLazyPagingItems,
                                             isLoading = isLoading,
                                             playerViewModel = playerViewModel,
                                             bottomBarHeight = bottomBarHeightDp,
+                                            isListView = playerUiState.isAlbumsListView,
+                                            currentAlbumSortOption = playerUiState.currentAlbumSortOption,
                                             onAlbumClick = stableOnAlbumClick,
                                             isRefreshing = isRefreshing,
                                             onRefresh = onRefresh,
@@ -1467,14 +1470,14 @@ fun LibraryScreen(
                                     }
 
                                     LibraryTabId.ARTISTS -> {
-                                        val artists by playerViewModel.artistsFlow.collectAsStateWithLifecycle()
                                         val isLoading = playerUiState.isLoadingLibraryCategories
 
                                         LibraryArtistsTab(
-                                            artists = artists,
+                                            artists = artistsLazyPagingItems,
                                             isLoading = isLoading,
                                             playerViewModel = playerViewModel,
                                             bottomBarHeight = bottomBarHeightDp,
+                                            currentArtistSortOption = playerUiState.currentArtistSortOption,
                                             onArtistClick = { artistId ->
                                                 navController.navigateSafely(
                                                     Screen.ArtistDetail.createRoute(

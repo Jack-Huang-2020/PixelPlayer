@@ -82,8 +82,10 @@ import com.theveloper.pixelplay.utils.ZipShareHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.PersistentList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.collections.immutable.toPersistentList
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
@@ -127,6 +129,28 @@ private const val CAST_LOG_TAG = "PlayerCastTransfer"
 private const val ENABLE_FOLDERS_SOURCE_SWITCHING = false
 private const val MAX_ALBUM_BATCH_SELECTION = 6
 private const val SONG_ID_QUERY_CHUNK_SIZE = 900
+private const val HOME_MIX_PREVIEW_LIMIT = 48
+
+private fun List<Song>.toPlaybackQueue(): ImmutableList<Song> = when (this) {
+    is PersistentList<Song> -> this
+    is ImmutableList<Song> -> this
+    else -> this.toPersistentList()
+}
+
+private fun ImmutableList<Song>.asPersistentPlaybackQueue(): PersistentList<Song> =
+    this as? PersistentList<Song> ?: this.toPersistentList()
+
+private fun ImmutableList<Song>.replaceSong(updatedSong: Song): ImmutableList<Song> {
+    val index = indexOfFirst { it.id == updatedSong.id }
+    if (index == -1) return this
+    return asPersistentPlaybackQueue().set(index, updatedSong)
+}
+
+private fun ImmutableList<Song>.removeSongById(songId: String): ImmutableList<Song> {
+    val index = indexOfFirst { it.id == songId }
+    if (index == -1) return this
+    return asPersistentPlaybackQueue().removeAt(index)
+}
 
 data class PlaybackAudioMetadata(
     val mediaId: String? = null,
@@ -1027,6 +1051,22 @@ class PlayerViewModel @Inject constructor(
             initialValue = persistentListOf()
         )
 
+    val paletteRegenerationTargets: StateFlow<List<Song>> = musicRepository.getDistinctAlbumArtSongs()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
+    val homeMixPreviewSongs: StateFlow<ImmutableList<Song>> = musicRepository.getHomeMixPreviewSongs(
+        limit = HOME_MIX_PREVIEW_LIMIT
+    ).map { it.toImmutableList() }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = persistentListOf()
+        )
+
     val albumsFlow: StateFlow<ImmutableList<Album>> = libraryStateHolder.albums
     val artistsFlow: StateFlow<ImmutableList<Artist>> = libraryStateHolder.artists
 
@@ -1201,7 +1241,7 @@ class PlayerViewModel @Inject constructor(
 
     // ---------------------------------------------------------------------------
     // PlayerConfigSlice — consolidates 7 infrequently-changing preference flows
-    // into ONE subscription. Previously UnifiedPlayerSheet(V2) had 7 separate
+    // into ONE subscription. Previously the player sheet had 7 separate
     // collectAsStateWithLifecycle() calls for config values, each causing a full
     // sheet recomposition when any preference changed.
     // ---------------------------------------------------------------------------
@@ -1287,14 +1327,14 @@ class PlayerViewModel @Inject constructor(
         )
     }
 
-    fun shuffleAllSongs() {
+    fun shuffleAllSongs(queueName: String = "All Songs (Shuffled)") {
         Log.d("ShuffleDebug", "shuffleAllSongs called.")
         
         // Load random songs from DB instead of materializing the entire library
         viewModelScope.launch {
             val randomSongs = musicRepository.getRandomSongs(limit = 500)
             if (randomSongs.isNotEmpty()) {
-                playSongsShuffled(randomSongs, "All Songs (Shuffled)", startAtZero = true)
+                playSongsShuffled(randomSongs, queueName, startAtZero = true)
             }
         }
     }
@@ -1844,7 +1884,7 @@ class PlayerViewModel @Inject constructor(
             getCurrentQueue = { _playerUiState.value.currentPlaybackQueue },
             updateQueue = { newQueue ->
                 _playerUiState.update {
-                    it.copy(currentPlaybackQueue = newQueue.toImmutableList())
+                    it.copy(currentPlaybackQueue = newQueue.toPlaybackQueue())
                 }
             },
             getMasterAllSongs = { libraryStateHolder.allSongs.value },
@@ -2329,7 +2369,7 @@ class PlayerViewModel @Inject constructor(
                 }
             }
 
-            _playerUiState.update { it.copy(currentPlaybackQueue = queue.toImmutableList()) }
+            _playerUiState.update { it.copy(currentPlaybackQueue = queue.toPlaybackQueue()) }
             if (queue.isNotEmpty()) {
                 _isSheetVisible.value = true
             }
@@ -2492,11 +2532,7 @@ class PlayerViewModel @Inject constructor(
         reportedPositionMs: Long
     ): Long {
         playbackStateHolder.syncCurrentPositionFromPlayer(mediaId, reportedPositionMs)
-        val resolvedPosition = playbackStateHolder.currentPosition.value
-        if (resolvedPosition != _playerUiState.value.currentPosition) {
-            _playerUiState.update { it.copy(currentPosition = resolvedPosition) }
-        }
-        return resolvedPosition
+        return playbackStateHolder.currentPosition.value
     }
 
     private fun setupMediaControllerListeners() {
@@ -2560,7 +2596,6 @@ class PlayerViewModel @Inject constructor(
                 }
                 playbackStateHolder.clearCurrentPositionHints()
                 playbackStateHolder.setCurrentPosition(0L)
-                _playerUiState.update { it.copy(currentPosition = 0L) }
                 resetPlaybackAudioMetadata()
             }
         }
@@ -2739,7 +2774,6 @@ class PlayerViewModel @Inject constructor(
                         }
                         playbackStateHolder.clearCurrentPositionHints()
                         playbackStateHolder.setCurrentPosition(0L)
-                        _playerUiState.update { it.copy(currentPosition = 0L) }
                         resetPlaybackAudioMetadata()
                     }
                 }
@@ -2883,11 +2917,10 @@ class PlayerViewModel @Inject constructor(
             transitionSchedulerJob?.cancel()
 
             val queueSongs = externalMediaStateHolder.buildExternalQueue(externalResult, uri)
-            val immutableQueue = queueSongs.toImmutableList()
+            val immutableQueue = queueSongs.toPlaybackQueue()
 
             _playerUiState.update { state ->
                 state.copy(
-                    currentPosition = 0L,
                     currentPlaybackQueue = immutableQueue,
                     currentQueueSourceName = context.getString(R.string.external_queue_label),
                     showDismissUndoBar = false,
@@ -3014,7 +3047,7 @@ class PlayerViewModel @Inject constructor(
                 return
             }
 
-            _playerUiState.update { it.copy(currentPlaybackQueue = songsToPlay.toImmutableList(), currentQueueSourceName = queueName) }
+            _playerUiState.update { it.copy(currentPlaybackQueue = songsToPlay.toPlaybackQueue(), currentQueueSourceName = queueName) }
             playbackStateHolder.updateStablePlayerState {
                 it.copy(
                     currentSong = effectiveStartSong,
@@ -3027,7 +3060,7 @@ class PlayerViewModel @Inject constructor(
             beginPreparingSong(effectiveStartSong)
             _playerUiState.update {
                 it.copy(
-                    currentPlaybackQueue = songsToPlay.toImmutableList(),
+                    currentPlaybackQueue = songsToPlay.toPlaybackQueue(),
                     currentQueueSourceName = queueName
                 )
             }
@@ -3178,7 +3211,7 @@ class PlayerViewModel @Inject constructor(
             currentSong = currentSong,
             currentQueueSourceName = _playerUiState.value.currentQueueSourceName,
             updateQueueCallback = { newQueue ->
-                _playerUiState.update { it.copy(currentPlaybackQueue = newQueue.toImmutableList()) }
+                _playerUiState.update { it.copy(currentPlaybackQueue = newQueue.toPlaybackQueue()) }
             }
         )
     }
@@ -3616,8 +3649,7 @@ class PlayerViewModel @Inject constructor(
         playbackStateHolder.setCurrentPosition(0L)
         _playerUiState.update { currentState ->
             currentState.copy(
-                currentPosition = 0L,
-                currentPlaybackQueue = currentState.currentPlaybackQueue.filter { it.id != song.id }.toImmutableList(),
+                currentPlaybackQueue = currentState.currentPlaybackQueue.removeSongById(song.id),
                 currentQueueSourceName = ""
             )
         }
@@ -3787,10 +3819,6 @@ class PlayerViewModel @Inject constructor(
 
     fun seekTo(position: Long) {
         playbackStateHolder.seekTo(position)
-        val resolvedPosition = playbackStateHolder.currentPosition.value
-        if (resolvedPosition != _playerUiState.value.currentPosition) {
-            _playerUiState.update { it.copy(currentPosition = resolvedPosition) }
-        }
     }
 
     fun nextSong() {
@@ -3807,6 +3835,10 @@ class PlayerViewModel @Inject constructor(
 
     private fun stopProgressUpdates() {
         playbackStateHolder.stopProgressUpdates()
+    }
+
+    fun observeSongs(songIds: List<String>): Flow<List<Song>> {
+        return musicRepository.getSongsByIds(songIds)
     }
 
     suspend fun getSongs(songIds: List<String>) : List<Song>{
@@ -4284,13 +4316,11 @@ class PlayerViewModel @Inject constructor(
             invalidateCoverArtCaches(previousAlbumArt, refreshedAlbumArtUri)
 
             _playerUiState.update { state ->
-                val queueIndex = state.currentPlaybackQueue.indexOfFirst { it.id == song.id }
-                if (queueIndex == -1) {
+                val updatedQueue = state.currentPlaybackQueue.replaceSong(updatedSong)
+                if (updatedQueue === state.currentPlaybackQueue) {
                     state
                 } else {
-                    val newQueue = state.currentPlaybackQueue.toMutableList()
-                    newQueue[queueIndex] = updatedSong
-                    state.copy(currentPlaybackQueue = newQueue.toImmutableList())
+                    state.copy(currentPlaybackQueue = updatedQueue)
                 }
             }
 
@@ -4390,12 +4420,10 @@ class PlayerViewModel @Inject constructor(
     ) {
         // Update the queue first
         val currentQueue = _playerUiState.value.currentPlaybackQueue
-        val songIndex = currentQueue.indexOfFirst { it.id == updatedSong.id }
+        val updatedQueue = currentQueue.replaceSong(updatedSong)
 
-        if (songIndex != -1) {
-            val newQueue = currentQueue.toMutableList()
-            newQueue[songIndex] = updatedSong
-            _playerUiState.update { it.copy(currentPlaybackQueue = newQueue.toImmutableList()) }
+        if (updatedQueue !== currentQueue) {
+            _playerUiState.update { it.copy(currentPlaybackQueue = updatedQueue) }
         }
 
         // Then, update the stable state

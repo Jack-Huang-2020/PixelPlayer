@@ -16,7 +16,6 @@ import kotlinx.collections.immutable.persistentListOf
 @Immutable
 data class PlayerUiState(
     // val allSongs: ImmutableList<Song> = persistentListOf(), // REMOVED
-    val currentPosition: Long = 0L,
     val currentPlaybackQueue: ImmutableList<Song> = persistentListOf(),
     val currentQueueSourceName: String = "All Songs",
     // val albums: ImmutableList<Album> = persistentListOf(), // REMOVED
