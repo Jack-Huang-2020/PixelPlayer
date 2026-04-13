@@ -49,8 +49,10 @@ android {
 
     defaultConfig {
         applicationId = "com.theveloper.pixelplay"
-        minSdk = 29
-        targetSdk = 35
+//        minSdk = 29
+//        targetSdk = 35
+        minSdk = 35
+        targetSdk = 37
         versionCode = (project.findProperty("APP_VERSION_CODE") as String).toInt()
         versionName = project.findProperty("APP_VERSION_NAME") as String
 
