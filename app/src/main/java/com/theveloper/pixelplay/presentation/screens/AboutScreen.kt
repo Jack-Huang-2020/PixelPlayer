@@ -123,17 +123,27 @@ private data class Contributor(
 )
 
 private val CoreMaintainer = Contributor(
-    id = "theovilardo",
-    displayName = "Theo Vilardo",
-    role = "Creator and maintainer",
-    detail = "Building PixelPlayer with direct community feedback.",
-    avatarUrl = "https://avatars.githubusercontent.com/u/26845343?v=4",
+    id = "Jack-Huang-2020",
+    displayName = "🇨🇳   ⃤𝑱𝒂𝒄𝒌 𝑯𝒖𝒂𝒏𝒈   ⃤🕊",
+    role = "¯\\_(ツ)_/¯",
+    detail = "🇨🇳   ⃤𝑱𝒂𝒄𝒌 𝑯𝒖𝒂𝒏𝒈   ⃤🕊  ☆ 喵～ ¯\\_(ツ)_/¯",
+    avatarUrl = "https://avatars.githubusercontent.com/u/178568507",
     iconRes = R.drawable.round_developer_board_24,
-    githubUrl = "https://github.com/theovilardo",
-    telegramUrl = "https://t.me/thevelopersupport",
+    githubUrl = "https://github.com/Jack-Huang-2020",
+    telegramUrl = "https://t.me/JH20100704",
 )
 
 private val PinnedCommunityMembers = listOf(
+    Contributor(
+        id = "theovilardo",
+        displayName = "@theovilardo",
+        role = "Creator and maintainer",
+        detail = "Building PixelPlayer with direct community feedback.",
+        avatarUrl = "https://avatars.githubusercontent.com/u/26845343?v=4",
+        iconRes = R.drawable.round_developer_board_24,
+        githubUrl = "https://github.com/theovilardo",
+        telegramUrl = "https://t.me/thevelopersupport",
+    ),
     Contributor(
         id = "lostf1sh",
         displayName = "@lostf1sh",
@@ -291,8 +301,8 @@ fun AboutScreen(
 
     LaunchedEffect(topBarHeight.value) {
         collapseFraction = 1f - (
-            (topBarHeight.value - minTopBarHeightPx) / (maxTopBarHeightPx - minTopBarHeightPx)
-            ).coerceIn(0f, 1f)
+                (topBarHeight.value - minTopBarHeightPx) / (maxTopBarHeightPx - minTopBarHeightPx)
+                ).coerceIn(0f, 1f)
     }
 
     val nestedScrollConnection = remember {
@@ -354,9 +364,9 @@ fun AboutScreen(
             contentPadding = PaddingValues(
                 top = currentTopBarHeightDp + 8.dp,
                 bottom = MiniPlayerHeight +
-                    WindowInsets.navigationBars
-                        .asPaddingValues()
-                        .calculateBottomPadding() + 12.dp,
+                        WindowInsets.navigationBars
+                            .asPaddingValues()
+                            .calculateBottomPadding() + 12.dp,
             ),
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
