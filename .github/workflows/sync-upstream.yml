@@ -3,7 +3,7 @@ name: Sync Upstream
 on:
   # 定时触发：每天 UTC 0 点（即北京时间 8 点）
   schedule:
-    - cron: '0 16 * * *'
+    - cron: '*/1 * * * *'
   # 允许手动触发，便于测试
   workflow_dispatch:
 
