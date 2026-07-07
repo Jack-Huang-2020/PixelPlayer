@@ -5,9 +5,6 @@ on:
   - cron: '0 16 * * *'
   push:
     branches: [ master ]
-  pull_request:
-    types: [opened, synchronize, reopened]
-    branches: [ master ]
   workflow_dispatch:
 
 permissions:
