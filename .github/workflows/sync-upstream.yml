@@ -34,7 +34,7 @@ jobs:
           git checkout master
           # --no-edit 自动生成合并提交信息，避免打开编辑器
           # --allow-unrelated-histories 首次合并时可能需要（若两仓库历史独立）
-          git merge upstream/main --no-edit --allow-unrelated-histories
+          git merge upstream/master --no-edit --allow-unrelated-histories
 
       - name: Push to your fork
         # 将合并后的本地 main 分支推送到 origin（即你的 Fork）
