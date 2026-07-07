@@ -1,0 +1,41 @@
+name: Sync Upstream
+
+on:
+  # 定时触发：每天 UTC 0 点（即北京时间 8 点）
+  schedule:
+    - cron: '0 16 * * *'
+  # 允许手动触发，便于测试
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout your fork
+        uses: actions/checkout@v4
+        with:
+          # 替换为你自己的目标分支，通常是 main 或 master
+          ref: master
+          # 拉取完整历史，避免浅克隆导致无法合并
+          fetch-depth: 0
+          # 使用默认 GITHUB_TOKEN，对当前 Fork 仓库有写入权限
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Add upstream remote
+        # 将 YOUR_UPSTREAM_OWNER/YOUR_UPSTREAM_REPO 替换为上游仓库的地址
+        # 例如：https://github.com/octocat/Hello-World.git
+        run: git remote add upstream https://github.com/PixelPlayerHQ/PixelPlayer
+
+      - name: Fetch upstream
+        run: git fetch upstream
+
+      - name: Merge upstream changes
+        run: |
+          git checkout main
+          # --no-edit 自动生成合并提交信息，避免打开编辑器
+          # --allow-unrelated-histories 首次合并时可能需要（若两仓库历史独立）
+          git merge upstream/main --no-edit --allow-unrelated-histories
+
+      - name: Push to your fork
+        # 将合并后的本地 main 分支推送到 origin（即你的 Fork）
+        run: git push origin main
