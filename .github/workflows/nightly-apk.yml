@@ -16,7 +16,7 @@ concurrency:
 jobs:
   changes:
     if: github.actor != 'dependabot[bot]'
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     outputs:
       current-sha: ${{ steps.nightly-changes.outputs.current-sha }}
       previous-sha: ${{ steps.nightly-changes.outputs.previous-sha }}
